@@ -79,6 +79,7 @@ library(DT)
 library(tidyverse)
 library(ggrepel)
 library(ggthemes)
+library(stargazer)
 ```
 
 # Data
@@ -97,38 +98,20 @@ d2 <- merge(d1,d2, by="ï..Country.name")
 df <- d2
 ```
 
-```{r}
-df$Regional.indicator %>% factor() %>% table()
-```
+
 
 
 ```{r}
 datatable(df, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
 
-```{r}
-# sum(is.na(df))
-```
 
-```{r}
-# df <- drop_na(df)
+```{r message=FALSE, warning=FALSE}
+datatable(normality(df[,3:12]), rownames = T, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
-
-```{r}
-# sum(is.na(df))
-```
-
-```{r}
-library(stargazer)
-```
-
 
 # `r params$Year`
-```{r}
-# year <- params$Year
-# year
 
-```
 
 # Region assignment from input to here
 
@@ -139,7 +122,7 @@ if (region == "Select All")
 {
   region <- unique(d2$Regional.indicator)
 }
-region
+
 
 ```
 
@@ -170,7 +153,7 @@ if (params$Corruption)
 {
   ls <- c(ls, "Perceptions.of.corruption")
 }
-ls
+
 
 ```
 
@@ -180,38 +163,6 @@ ls
 # `r params$region`
 
 # `r params$GDP`
-
-
-
-
-```{r}
-# df %>% head()
-```
-
-```{r}
-# unique(df$year) %>% length()
-```
-
-```{r}
-# unique(df$ï..Country.name) %>% length()
-
-```
-
-```{r}
-# df %>% summary()
-```
-```{r}
-# describe(df)
-```
-```{r}
-# xtable
-```
-
-
-```{r}
-# kable(summary(df), results='asis')
-```
-
 
 
 
@@ -228,7 +179,6 @@ for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
 
 
 ```{r}
-
 plt_data <- df %>% filter(year == params$Year)
 
 # get top 5
@@ -236,7 +186,6 @@ df_top <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_max
 
 # get bottom 5
 df_bottom <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_min(Life.Ladder, n=5)
-
 
 ```
 
@@ -265,9 +214,8 @@ labs(title = 'Comparison of Top and Bottom 5 Countries',
 ```{r}
 # Correlation Matrix
 cor_data <- cor(df[,3:11],use = "pairwise.complete.obs")
-cor_data %>% datatable()
+datatable(cor_data, rownames = T, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
-
 
 
 
@@ -277,9 +225,6 @@ corrplot(cor_data, method = "pie")
 ```
 
 
-```{r message=FALSE, warning=FALSE}
-datatable(normality(df[,3:12]))
-```
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -389,18 +334,22 @@ regressionMetrics <- function(real, predicted) {
 
 
 ```{r}
-k <- (DataForML %>% colnames() %>% length())
-k
+
 ```
 
 
 ```{r message=FALSE, warning=FALSE}
+
+# For extratint number of predictors
+k <- (DataForML %>% colnames() %>% length())
+
 
 step.model <- train(Life.Ladder ~., data = DataForML,
                     method = "leapBackward",
                     tuneGrid = data.frame(nvmax = 1:k)
                     )
 step.model
+
 ```
 
 
@@ -442,7 +391,5 @@ formula <- paste("Life.Ladder ~ -Life.Ladder", formula)
 Formula for Regression : `r formula`
 
 ```{r}
-model <- lm(Life.Ladder~. , data = DataForML, k = 5)
-plot(model)
-vif(model)
+plot(lmModel)
 ```
