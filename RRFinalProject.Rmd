@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "World Happiness Report 2005-2020"
 output: 
   html_document: 
     self_contained: true
@@ -79,6 +79,8 @@ library(DT)
 library(tidyverse)
 library(stargazer)
 library(knitr)
+library(ggrepel)
+library(ggthemes)
 ```
 
 # Data
@@ -186,5 +188,240 @@ describe(df)
 ```
 
 
+## Handling Missing Values
+
+```{r}
+for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
+  df[is.na(df[,i]), i] <- mean(df[,i], na.rm = TRUE)
+  
+}
+```
+
+
+# Preparing Analysis Plots 
+```{r}
+# Filter by year
+plt_data <- df %>% filter(year == params$Year)
+
+# get top 5
+df_top <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_max(Life.Ladder, n=5)
+
+# get bottom 5
+df_bottom <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_min(Life.Ladder, n=5)
+
+
+```
+
+```{r}
+# Top 5 Happiest Countries
+ggplot(df_top, aes(y = reorder(ï..Country.name, Life.Ladder), x = Life.Ladder)) + 
+  labs(title=paste("The World Happiness Report", params$Year), x="Score", y = "Country") +
+   geom_bar(stat="identity") + theme_minimal()
+```
+
+```{r}
+# Top 5 Unhappiest Countries
+ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladder)) + 
+  labs(title=paste("The World Unhappiness Report", params$Year), x="Score", y = "Country") +
+   geom_bar(stat="identity") + theme_minimal()
+```
+
+```{r}
+# Comparison of Top 5 and Bottom 5
+bind_rows(df_top,df_bottom)%>%
+ggplot()+geom_point(aes(x= Life.Ladder, y = Life.Ladder))+
+geom_text_repel(aes(x=Life.Ladder, y = Life.Ladder, label = ï..Country.name))+
+labs(title = 'Comparison of Top and Bottom 5 Countries',
+    subtitle = paste('Based on Life Ladder,', params$Year),
+    x= 'Life Ladder Score',
+    y = 'Life Ladder Score')+theme_stata()
+```
+
+```{r}
+# Correlation Matrix and Plot
+if (length(ls) >= 1)
+{
+  # Correlation Matrix
+  cor_data <- cor(df[,ls],use = "pairwise.complete.obs")
+  print(cor_data)
+  # Plotting Corelation Matrix
+  corrplot(cor_data, method = "pie")
+}
+
+```
+
+
+```{r message=FALSE, warning=FALSE}
+# Checking Normality
+normality(df[,3:12])
+```
+
+```{r message=FALSE, warning=FALSE}
+
+# Top 5 Happy Regions
+rr_top <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% group_by(Regional.indicator) %>% summarize(mean_size = mean(Life.Ladder, na.rm = TRUE)) %>% slice_max(mean_size, n=5)
+
+# Bottom 5 Regions (Unhappy)
+rr_bottom <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% group_by(Regional.indicator) %>% summarize(mean_size = mean(Life.Ladder, na.rm = TRUE)) %>% slice_min(mean_size, n=5)
+
+```
+
+```{r message=FALSE, warning=FALSE}
+# Top 5 Happiest Countries
+ggplot(rr_top, aes(y = reorder(Regional.indicator, mean_size), x = mean_size)) + 
+  labs(title=paste("The World's Happiness Region", params$Year, "(Top 5)"), x="Average Score", y = "Region") +
+   geom_bar(stat="identity") + theme_minimal()
+```
+
+```{r message=FALSE, warning=FALSE}
+# Top 5 Unhappiest Countries
+ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size)) + 
+  labs(title=paste("The World's Unhappiness Region", params$Year, "(Bottom 5)"), x="Average Score", y = "Region") +
+   geom_bar(stat="identity") + theme_minimal()
+```
+
+
+
+```{r}
+# Comparison of Top 5 and Bottom 5
+bind_rows(rr_top,rr_bottom)%>%
+ggplot()+geom_point(aes(x= mean_size, y = mean_size))+
+geom_text_repel(aes(x= mean_size, y = mean_size, label = Regional.indicator))+
+labs(title = 'Comparison of Top and Bottom 5 Regions',
+    subtitle = paste('Based on Life Ladder,', params$Year),
+    x= 'Mean Life Ladder Score',
+    y = 'Mean Life Ladder Score')+theme_stata()
+```
+
+
+
+# Preparing Final Filtered Data
+
+```{r message=FALSE, warning=FALSE}
+# Preparing Final Data For ML
+YearAndName <- c("year", "ï..Country.name", "Life.Ladder", "Regional.indicator", "Negative.affect", "Positive.affect")
+
+SelectingVar <- c(YearAndName, ls)
+
+FilteredData <-df %>% filter(Regional.indicator == region)
+FilteredData <-FilteredData %>% select(SelectingVar)
+
+```
+
+
+
+
+# Model
+```{r message=FALSE, warning=FALSE}
+DataForML <- FilteredData %>% select(-year,-ï..Country.name, -Regional.indicator)
+
+```
+
+```{r}
+datatable(DataForML, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+DataForML_numeric_vars <- 
+  sapply(DataForML, is.numeric) %>% 
+  which() %>% 
+  names()
+
+
+DataForML_correlations <- 
+  cor(DataForML[,DataForML_numeric_vars],
+      use = "pairwise.complete.obs")
+```
+
+```{r message=FALSE, warning=FALSE}
+corrplot(DataForML_correlations, 
+         method = "pie")
+```
+
+
+```{r message=FALSE, warning=FALSE}
+regressionMetrics <- function(real, predicted) {
+  # Mean Squera Error
+  MSE <- mean((real - predicted)^2)
+  # Root Mean Square Error
+  RMSE <- sqrt(MSE)
+  # Mean Absolute Error
+  MAE <- mean(abs(real - predicted))
+  # Median Absolute Error
+  MedAE <- median(abs(real - predicted))
+  # Mean Logarithmic Absolute Error
+  MSLE <- mean((log(1 + real) - log(1 + predicted))^2)
+  # Total Sum of Squares
+  TSS <- sum((real - mean(real))^2)
+  # Explained Sum of Squares
+  RSS <- sum((predicted - real)^2)
+  # R2
+  R2 <- 1 - RSS/TSS
+  
+  result <- data.frame(MSE, RMSE, MAE, MedAE, MSLE, R2)
+  return(result)
+}
+```
+
+
+
+
+```{r}
+k <- (DataForML %>% colnames() %>% length())
+k
+```
+
+
+```{r message=FALSE, warning=FALSE}
+
+step.model <- train(Life.Ladder ~., data = DataForML,
+                    method = "leapBackward",
+                    tuneGrid = data.frame(nvmax = 1:k)
+                    )
+step.model
+```
+
+
+
+
+```{r}
+plot(step.model)
+```
+
+
+
+
+
+
+```{r}
+
+lmModel <- lm(Life.Ladder ~., data = DataForML)
+
+lmModel %>% summary
+
+
+```
+
+
+
+```{r}
+factors <- DataForML %>% select(-Life.Ladder) %>% colnames()
+formula <- ""
+for (j in factors)
+{
+  formula <- paste(formula, j, sep = "+")
+}
+formula <- paste("Life.Ladder ~ -Life.Ladder", formula)
+```
+Formula for Regression : `r formula`
+
+```{r}
+model <- lm(Life.Ladder~. , data = DataForML, k = 5)
+plot(model)
+vif(model)
+```
 
 
