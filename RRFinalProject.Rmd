@@ -1,5 +1,5 @@
 ---
-title: "World Happiness Report 2005-2020"
+title: "R Notebook"
 output: 
   html_document: 
     self_contained: true
@@ -19,7 +19,8 @@ params:
     sep: ""
   region:
     label: "region:"
-    value: Select All
+    # value: Latin America and Caribbean
+    value: South Asia
     input: select
     choices: [Select All,South Asia, Central and Eastern Europe, Middle East and North Africa, Latin America and Caribbean, Commonwealth of Independent States, North America and ANZ, Western Europe, Sub-Saharan Africa, Southeast Asia, East Asia]
   GDP:
@@ -37,7 +38,7 @@ params:
   Generosity: 
     label: "Generosity"
     input: checkbox
-    value: True
+    value: False
   Corruption:
     label: "Perceptions.of.corruption"
     input: checkbox
@@ -65,7 +66,6 @@ The following link is the dataset that is considered for this project: https://w
 
 The data includes 149 countries and their region. Also, it includes econometric values for each country.
 
-
 ```{r message=FALSE, warning=FALSE}
 library(dplyr)
 library(caret)
@@ -77,8 +77,6 @@ library(corrplot)
 library(car)
 library(DT)
 library(tidyverse)
-library(stargazer)
-library(knitr)
 library(ggrepel)
 library(ggthemes)
 ```
@@ -88,7 +86,7 @@ library(ggthemes)
 ## Description of the dataset
 The World Happiness Report is a landmark survey of the state of global happiness . The report continues to gain global recognition as governments, organizations and civil society increasingly use happiness indicators to inform their policy-making decisions. Leading experts across fields – economics, psychology, survey analysis, national statistics, health, public policy and more – describe how measurements of well-being can be used effectively to assess the progress of nations. The reports review the state of happiness in the world today and show how the new science of happiness explains personal and national variations in happiness.
 
-The happiness scores and rankings use data from the Gallup World Poll . The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but the
+The happiness scores and rankings use data from the Gallup World Poll . The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but they do explain why some countries rank higher than others.
 
 
 ```{r message=FALSE, warning=FALSE}
@@ -108,28 +106,50 @@ df$Regional.indicator %>% factor() %>% table()
 datatable(df, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
 
-
-The user selected year is `r params$Year` and the user selected region is/are mentioned below. 
+```{r}
+# sum(is.na(df))
+```
 
 ```{r}
-# Setting all if the user selects all
+# df <- drop_na(df)
+```
+
+```{r}
+# sum(is.na(df))
+```
+
+```{r}
+library(stargazer)
+```
+
+
+# `r params$Year`
+```{r}
+# year <- params$Year
+# year
+
+```
+
+# Region assignment from input to here
+
+# `r params$region`
+```{r}
 region <- params$region
 if (region == "Select All")
 {
   region <- unique(d2$Regional.indicator)
 }
 region
+
 ```
 
 
-The user selected Log.GDP.per.capita = `r params$GDP`,  Social.support = `r params$Social`, Healthy.life.expectancy.at.birth = `r params$Health`, Generosity = `r params$Generosity` and Perceptions.of.corruption = `r params$Corruption` for ML model. 
 
-Final user selected attributes are mentioned below. 
-
-```{r}
 # Parameters assignment from input to here
 
+```{r}
 ls <- c()
+
 if (params$GDP)
 {
   ls <- c(ls, "Log.GDP.per.capita")
@@ -155,29 +175,48 @@ ls
 ```
 
 
+
+
+# `r params$region`
+
+# `r params$GDP`
+
+
+
+
 ```{r}
-df %>% head()
+# df %>% head()
 ```
 
 ```{r}
-unique(df$year) %>% length()
+# unique(df$year) %>% length()
 ```
 
 ```{r}
-unique(df$ï..Country.name) %>% length()
+# unique(df$ï..Country.name) %>% length()
 
 ```
 
 ```{r}
-df %>% summary()
+# df %>% summary()
 ```
+```{r}
+# describe(df)
+```
+```{r}
+# xtable
+```
+
 
 ```{r}
-describe(df)
+# kable(summary(df), results='asis')
 ```
 
 
-## Handling Missing Values
+
+
+
+## Missing Values
 
 ```{r}
 for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
@@ -187,9 +226,9 @@ for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
 ```
 
 
-# Preparing Analysis Plots 
+
 ```{r}
-# Filter by year
+
 plt_data <- df %>% filter(year == params$Year)
 
 # get top 5
@@ -202,21 +241,18 @@ df_bottom <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_
 ```
 
 ```{r}
-# Top 5 Happiest Countries
 ggplot(df_top, aes(y = reorder(ï..Country.name, Life.Ladder), x = Life.Ladder)) + 
   labs(title=paste("The World Happiness Report", params$Year), x="Score", y = "Country") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred") + theme_classic()
 ```
 
 ```{r}
-# Top 5 Unhappiest Countries
 ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladder)) + 
   labs(title=paste("The World Unhappiness Report", params$Year), x="Score", y = "Country") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred") + theme_classic()
 ```
 
 ```{r}
-# Comparison of Top 5 and Bottom 5
 bind_rows(df_top,df_bottom)%>%
 ggplot()+geom_point(aes(x= Life.Ladder, y = Life.Ladder))+
 geom_text_repel(aes(x=Life.Ladder, y = Life.Ladder, label = ï..Country.name))+
@@ -227,52 +263,47 @@ labs(title = 'Comparison of Top and Bottom 5 Countries',
 ```
 
 ```{r}
-# Correlation Matrix and Plot
-if (length(ls) >= 1)
-{
-  # Correlation Matrix
-  cor_data <- cor(df[,ls],use = "pairwise.complete.obs")
-  print(cor_data)
-  # Plotting Corelation Matrix
-  corrplot(cor_data, method = "pie")
-}
+# Correlation Matrix
+cor_data <- cor(df[,3:11],use = "pairwise.complete.obs")
+cor_data %>% datatable()
+```
 
+
+
+
+```{r message=FALSE, warning=FALSE}
+# Plotting Corelation Matrix
+corrplot(cor_data, method = "pie")
 ```
 
 
 ```{r message=FALSE, warning=FALSE}
-# Checking Normality
-normality(df[,3:12])
+datatable(normality(df[,3:12]))
 ```
 
 ```{r message=FALSE, warning=FALSE}
 
-# Top 5 Happy Regions
 rr_top <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% group_by(Regional.indicator) %>% summarize(mean_size = mean(Life.Ladder, na.rm = TRUE)) %>% slice_max(mean_size, n=5)
 
-# Bottom 5 Regions (Unhappy)
 rr_bottom <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% group_by(Regional.indicator) %>% summarize(mean_size = mean(Life.Ladder, na.rm = TRUE)) %>% slice_min(mean_size, n=5)
 
 ```
 
 ```{r message=FALSE, warning=FALSE}
-# Top 5 Happiest Countries
 ggplot(rr_top, aes(y = reorder(Regional.indicator, mean_size), x = mean_size)) + 
   labs(title=paste("The World's Happiness Region", params$Year, "(Top 5)"), x="Average Score", y = "Region") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred")+ theme_classic()
 ```
 
 ```{r message=FALSE, warning=FALSE}
-# Top 5 Unhappiest Countries
 ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size)) + 
   labs(title=paste("The World's Unhappiness Region", params$Year, "(Bottom 5)"), x="Average Score", y = "Region") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred") + theme_classic()
 ```
 
 
 
 ```{r}
-# Comparison of Top 5 and Bottom 5
 bind_rows(rr_top,rr_bottom)%>%
 ggplot()+geom_point(aes(x= mean_size, y = mean_size))+
 geom_text_repel(aes(x= mean_size, y = mean_size, label = Regional.indicator))+
@@ -283,11 +314,11 @@ labs(title = 'Comparison of Top and Bottom 5 Regions',
 ```
 
 
+# `r params$Year` for Data
 
-# Preparing Final Filtered Data
 
 ```{r message=FALSE, warning=FALSE}
-# Preparing Final Data For ML
+
 YearAndName <- c("year", "ï..Country.name", "Life.Ladder", "Regional.indicator", "Negative.affect", "Positive.affect")
 
 SelectingVar <- c(YearAndName, ls)
@@ -296,7 +327,6 @@ FilteredData <-df %>% filter(Regional.indicator == region)
 FilteredData <-FilteredData %>% select(SelectingVar)
 
 ```
-
 
 
 
@@ -383,16 +413,20 @@ plot(step.model)
 
 
 
-
-
 ```{r}
 
 lmModel <- lm(Life.Ladder ~., data = DataForML)
 
-lmModel %>% summary
+
+stargazer(lmModel, type = "text", 
+          style = "apsr",
+          title = "Regression results", 
+          header = FALSE,
+          single.row = T)
 
 
 ```
+
 
 
 
@@ -412,5 +446,3 @@ model <- lm(Life.Ladder~. , data = DataForML, k = 5)
 plot(model)
 vif(model)
 ```
-
-
