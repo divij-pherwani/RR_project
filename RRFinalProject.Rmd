@@ -77,6 +77,8 @@ library(corrplot)
 library(car)
 library(DT)
 library(tidyverse)
+library(stargazer)
+library(knitr)
 ```
 
 # Data
@@ -91,7 +93,98 @@ The happiness scores and rankings use data from the Gallup World Poll . The colu
 d1 <- read.csv("world-happiness-report.csv")
 d2 <- read.csv("world-happiness-report-2021.csv")
 d2 <- d2  %>% select(ï..Country.name,Regional.indicator)
+d2 <- merge(d1,d2, by="ï..Country.name")
 df <- d2
 ```
+
+```{r}
+df$Regional.indicator %>% factor() %>% table()
+```
+
+
+```{r}
+datatable(df, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
+```
+
+```{r}
+#sum(is.na(df))
+```
+
+```{r}
+# df <- drop_na(df)
+```
+
+```{r}
+# sum(is.na(df))
+```
+
+The user selected year is `r params$Year` and the user selected region is/are mentioned below. 
+
+```{r}
+# Setting all if the user selects all
+region <- params$region
+if (region == "Select All")
+{
+  region <- unique(d2$Regional.indicator)
+}
+region
+```
+
+
+The user selected Log.GDP.per.capita = `r params$GDP`,  Social.support = `r params$Social`, Healthy.life.expectancy.at.birth = `r params$Health`, Generosity = `r params$Generosity` and Perceptions.of.corruption = `r params$Corruption` for ML model. 
+
+Final user selected attributes are mentioned below. 
+
+```{r}
+# Parameters assignment from input to here
+
+ls <- c()
+if (params$GDP)
+{
+  ls <- c(ls, "Log.GDP.per.capita")
+}
+if (params$Social)
+{
+  ls <- c(ls, "Social.support")
+}
+if (params$Health)
+{
+  ls <- c(ls, "Healthy.life.expectancy.at.birth") 
+}
+if (params$Generosity)
+{
+  ls <- c(ls, "Generosity") 
+}  
+if (params$Corruption)
+{
+  ls <- c(ls, "Perceptions.of.corruption")
+}
+ls
+
+```
+
+
+```{r}
+df %>% head()
+```
+
+```{r}
+unique(df$year) %>% length()
+```
+
+```{r}
+unique(df$ï..Country.name) %>% length()
+
+```
+
+```{r}
+df %>% summary()
+```
+
+```{r}
+describe(df)
+```
+
+
 
 
