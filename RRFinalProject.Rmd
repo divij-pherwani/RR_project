@@ -1,18 +1,97 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: 
+  html_document: 
+    self_contained: true
+    lib_dir: libs
+    theme: spacelab
+    highlight: tango
+    toc: true
+    toc_float: true
+params:
+  Year:
+    label: "Year"
+    value: 2009
+    input: slider
+    min: 2005
+    max: 2020
+    step: 1
+    sep: ""
+  region:
+    label: "region:"
+    value: Select All
+    input: select
+    choices: [Select All,South Asia, Central and Eastern Europe, Middle East and North Africa, Latin America and Caribbean, Commonwealth of Independent States, North America and ANZ, Western Europe, Sub-Saharan Africa, Southeast Asia, East Asia]
+  GDP:
+    label: "Log.GDP.per.capita"
+    input: checkbox
+    value: True
+  Social:
+    label: "Social.support"
+    input: checkbox
+    value: True
+  Health:
+    label: "Healthy.life.expectancy.at.birth"
+    input: checkbox
+    value: True
+  Generosity: 
+    label: "Generosity"
+    input: checkbox
+    value: True
+  Corruption:
+    label: "Perceptions.of.corruption"
+    input: checkbox
+    value: True
+
+
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-plot(cars)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+# Introduction
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+The project aims to create a reusable report with the same structure of the data. The report will include exploratory data analysis and basic modeling. The report will do the same analysis when the input data is changed. However, input data should be in the same structure as the initial input data.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+A test data will be created from initial data and the reusability that is mentioned above will be tested with this data.
+
+The following link is the dataset that is considered for this project: https://www.kaggle.com/ajaypalsinghlo/world-happiness-report-2021
+
+The data includes 149 countries and their region. Also, it includes econometric values for each country.
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(caret)
+library(corrplot)
+library(ggplot2)
+library(corrgram) 
+library(dlookr)
+library(corrplot)
+library(car)
+library(DT)
+library(tidyverse)
+```
+
+# Data
+
+## Description of the dataset
+The World Happiness Report is a landmark survey of the state of global happiness . The report continues to gain global recognition as governments, organizations and civil society increasingly use happiness indicators to inform their policy-making decisions. Leading experts across fields – economics, psychology, survey analysis, national statistics, health, public policy and more – describe how measurements of well-being can be used effectively to assess the progress of nations. The reports review the state of happiness in the world today and show how the new science of happiness explains personal and national variations in happiness.
+
+The happiness scores and rankings use data from the Gallup World Poll . The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but the
+
+
+```{r message=FALSE, warning=FALSE}
+d1 <- read.csv("world-happiness-report.csv")
+d2 <- read.csv("world-happiness-report-2021.csv")
+d2 <- d2  %>% select(ï..Country.name,Regional.indicator)
+df <- d2
+```
+
+
