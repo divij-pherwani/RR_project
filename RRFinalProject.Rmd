@@ -217,16 +217,13 @@ for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
 
 ```{r}
 # Correlation Matrix and Plot
-if (length(ls) >= 1)
-{
-  # Correlation Matrix
-  cor_data <- cor(df[,ls],use = "pairwise.complete.obs")
-  print(cor_data)
-  # Plotting Corelation Matrix
-  corrplot(cor_data, method = "pie")
-} else {
-  print("Not enough factors selected")
-}
+# Correlation Matrix
+temp <- df %>% select(-year,-ï..Country.name, -Regional.indicator) %>% colnames()
+cor_data <- cor(df[, temp],use = "pairwise.complete.obs")
+print(cor_data)
+# Plotting Corelation Matrix
+corrplot(cor_data, method = "pie")
+
 
 ```
 
