@@ -86,6 +86,7 @@ library(ggthemes)
 # Data
 
 ## Description of the dataset
+
 The World Happiness Report is a landmark survey of the state of global happiness . The report continues to gain global recognition as governments, organizations and civil society increasingly use happiness indicators to inform their policy-making decisions. Leading experts across fields – economics, psychology, survey analysis, national statistics, health, public policy and more – describe how measurements of well-being can be used effectively to assess the progress of nations. The reports review the state of happiness in the world today and show how the new science of happiness explains personal and national variations in happiness.
 
 The happiness scores and rankings use data from the Gallup World Poll . The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but the
@@ -99,15 +100,19 @@ d2 <- merge(d1,d2, by="ï..Country.name")
 df <- d2
 ```
 
+Number of data points for each region 
+
 ```{r}
 df$Regional.indicator %>% factor() %>% table()
 ```
 
+Displaying Table in an interactive way using Shiny
 
 ```{r}
 datatable(df, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
 
+## Exploratory Data Analysis
 
 The user selected year is `r params$Year` and the user selected region is/are mentioned below. 
 
@@ -159,27 +164,46 @@ ls
 df %>% head()
 ```
 
+Number of unique years
+
 ```{r}
 unique(df$year) %>% length()
 ```
+
+Number of unique country names
 
 ```{r}
 unique(df$ï..Country.name) %>% length()
 
 ```
 
+Summary of the data set 
+
 ```{r}
 df %>% summary()
 ```
+
+Description of the dataset
 
 ```{r}
 describe(df)
 ```
 
 
-## Handling Missing Values
+
+Checking Normality of all the available factors
+
+```{r message=FALSE, warning=FALSE}
+# Checking Normality
+normality(df[,3:12])
+```
+
+
+
+
 
 ```{r}
+# Handling Missing Values
 for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
   df[is.na(df[,i]), i] <- mean(df[,i], na.rm = TRUE)
   
@@ -187,7 +211,26 @@ for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
 ```
 
 
-# Preparing Analysis Plots 
+## Preparing Analysis Plots 
+
+### Checking correlation between the the selected factors 
+
+```{r}
+# Correlation Matrix and Plot
+if (length(ls) >= 1)
+{
+  # Correlation Matrix
+  cor_data <- cor(df[,ls],use = "pairwise.complete.obs")
+  print(cor_data)
+  # Plotting Corelation Matrix
+  corrplot(cor_data, method = "pie")
+} else {
+  print("Not enough factors selected")
+}
+
+```
+
+
 ```{r}
 # Filter by year
 plt_data <- df %>% filter(year == params$Year)
@@ -201,19 +244,22 @@ df_bottom <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_
 
 ```
 
+### Top & Bottom five for Happiness index of countries in `r params$Year` 
+
 ```{r}
 # Top 5 Happiest Countries
 ggplot(df_top, aes(y = reorder(ï..Country.name, Life.Ladder), x = Life.Ladder)) + 
   labs(title=paste("The World Happiness Report", params$Year), x="Score", y = "Country") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "blue") + theme_minimal()
 ```
 
 ```{r}
 # Top 5 Unhappiest Countries
 ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladder)) + 
   labs(title=paste("The World Unhappiness Report", params$Year), x="Score", y = "Country") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred") + theme_minimal()
 ```
+
 
 ```{r}
 # Comparison of Top 5 and Bottom 5
@@ -226,24 +272,9 @@ labs(title = 'Comparison of Top and Bottom 5 Countries',
     y = 'Life Ladder Score')+theme_stata()
 ```
 
-```{r}
-# Correlation Matrix and Plot
-if (length(ls) >= 1)
-{
-  # Correlation Matrix
-  cor_data <- cor(df[,ls],use = "pairwise.complete.obs")
-  print(cor_data)
-  # Plotting Corelation Matrix
-  corrplot(cor_data, method = "pie")
-}
 
-```
+### Top & Bottom five for Happiness index of regions in `r params$Year`
 
-
-```{r message=FALSE, warning=FALSE}
-# Checking Normality
-normality(df[,3:12])
-```
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -259,14 +290,14 @@ rr_bottom <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% grou
 # Top 5 Happiest Countries
 ggplot(rr_top, aes(y = reorder(Regional.indicator, mean_size), x = mean_size)) + 
   labs(title=paste("The World's Happiness Region", params$Year, "(Top 5)"), x="Average Score", y = "Region") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "blue") + theme_minimal()
 ```
 
 ```{r message=FALSE, warning=FALSE}
 # Top 5 Unhappiest Countries
 ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size)) + 
   labs(title=paste("The World's Unhappiness Region", params$Year, "(Bottom 5)"), x="Average Score", y = "Region") +
-   geom_bar(stat="identity") + theme_minimal()
+   geom_bar(stat="identity", fill = "darkred") + theme_minimal()
 ```
 
 
@@ -284,7 +315,11 @@ labs(title = 'Comparison of Top and Bottom 5 Regions',
 
 
 
-# Preparing Final Filtered Data
+# Linear Regression Model
+
+**The Linear Regression Model is built for data points for region - `r params$region`** 
+
+The head of the filtered data 
 
 ```{r message=FALSE, warning=FALSE}
 # Preparing Final Data For ML
@@ -294,22 +329,22 @@ SelectingVar <- c(YearAndName, ls)
 
 FilteredData <-df %>% filter(Regional.indicator == region)
 FilteredData <-FilteredData %>% select(SelectingVar)
-
+datatable(FilteredData, rownames = FALSE, filter="top", options = list(scrollX=T))
 ```
 
 
 
-
-# Model
 ```{r message=FALSE, warning=FALSE}
 DataForML <- FilteredData %>% select(-year,-ï..Country.name, -Regional.indicator)
 
 ```
 
+
+After removing categorical variables, we keep the numeric variables for regression. Table of data to be input in regression function. 
+
 ```{r}
 datatable(DataForML, rownames = FALSE, filter="top", options = list(pageLength = 5, scrollX=T))
 ```
-
 
 
 
@@ -325,11 +360,14 @@ DataForML_correlations <-
       use = "pairwise.complete.obs")
 ```
 
+Correlation plot for the final factors involved in regression
+
 ```{r message=FALSE, warning=FALSE}
 corrplot(DataForML_correlations, 
          method = "pie")
 ```
 
+Regression Metrics
 
 ```{r message=FALSE, warning=FALSE}
 regressionMetrics <- function(real, predicted) {
@@ -357,12 +395,14 @@ regressionMetrics <- function(real, predicted) {
 
 
 
+Number of factors in regression
 
 ```{r}
 k <- (DataForML %>% colnames() %>% length())
 k
 ```
 
+Backward selection of selected factors
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -381,9 +421,7 @@ plot(step.model)
 ```
 
 
-
-
-
+Simple Linear Regression Model
 
 ```{r}
 
@@ -391,7 +429,16 @@ lmModel <- lm(Life.Ladder ~., data = DataForML)
 
 lmModel %>% summary
 
+```
 
+Regression summary in a table 
+
+```{r}
+stargazer(lmModel, type = "text", 
+          style = "apsr",
+          title = "Regression results", 
+          header = FALSE,
+          single.row = T)
 ```
 
 
@@ -403,14 +450,17 @@ for (j in factors)
 {
   formula <- paste(formula, j, sep = "+")
 }
-formula <- paste("Life.Ladder ~ -Life.Ladder", formula)
+
+formula <- substring(formula,2)
+formula <- paste("Life.Ladder ~ ", formula)
 ```
-Formula for Regression : `r formula`
+
+**Formula for Regression : `r formula` **
+
+Plots for regression
 
 ```{r}
-model <- lm(Life.Ladder~. , data = DataForML, k = 5)
-plot(model)
-vif(model)
+plot(lmModel)
 ```
 
 
