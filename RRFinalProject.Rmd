@@ -319,7 +319,7 @@ labs(title = 'Comparison of Top and Bottom 5 Regions',
 
 **The Linear Regression Model is built for data points for region - `r params$region`** 
 
-The head of the filtered data 
+The table of the filtered data 
 
 ```{r message=FALSE, warning=FALSE}
 # Preparing Final Data For ML
