@@ -1,5 +1,6 @@
 ---
 title: "World Happiness Report 2005-2020"
+author: Divij Pherwani & Mert Camur
 output: 
   html_document: 
     self_contained: true
@@ -42,8 +43,6 @@ params:
     label: "Perceptions.of.corruption"
     input: checkbox
     value: True
-
-
 ---
 
 
@@ -161,7 +160,7 @@ ls
 
 
 ```{r}
-df %>% head()
+#df %>% head()
 ```
 
 Number of unique years
@@ -213,7 +212,7 @@ for(i in 3:ncol(df %>% dplyr::select(-Regional.indicator))){
 
 ## Preparing Analysis Plots 
 
-### Checking correlation between the the selected factors 
+### Checking correlation between all factors
 
 ```{r}
 # Correlation Matrix and Plot
@@ -245,14 +244,18 @@ df_bottom <- plt_data %>% select(ï..Country.name, year, Life.Ladder) %>% slice_
 
 ```{r}
 # Top 5 Happiest Countries
-ggplot(df_top, aes(y = reorder(ï..Country.name, Life.Ladder), x = Life.Ladder)) + 
+p1 <- ggplot(df_top, aes(y = reorder(ï..Country.name, Life.Ladder), x = Life.Ladder)) + 
+  geom_text(aes(label=round(Life.Ladder,2), hjust=0, vjust=0)) + 
+  coord_cartesian(xlim = c(0, 10)) + 
   labs(title=paste("The World Happiness Report", params$Year), x="Score", y = "Country") +
    geom_bar(stat="identity", fill = "blue") + theme_minimal()
 ```
 
 ```{r}
 # Top 5 Unhappiest Countries
-ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladder)) + 
+p2 <- ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladder)) + 
+  geom_text(aes(label=round(Life.Ladder,2), hjust=0, vjust=0)) + 
+  coord_cartesian(xlim = c(0, 10)) + 
   labs(title=paste("The World Unhappiness Report", params$Year), x="Score", y = "Country") +
    geom_bar(stat="identity", fill = "darkred") + theme_minimal()
 ```
@@ -260,14 +263,36 @@ ggplot(df_bottom, aes(y = reorder(ï..Country.name, -Life.Ladder), x = Life.Ladd
 
 ```{r}
 # Comparison of Top 5 and Bottom 5
-bind_rows(df_top,df_bottom)%>%
+p3 <- bind_rows(df_top,df_bottom)%>%
 ggplot()+geom_point(aes(x= Life.Ladder, y = Life.Ladder))+
 geom_text_repel(aes(x=Life.Ladder, y = Life.Ladder, label = ï..Country.name))+
+  coord_cartesian(xlim = c(0, 10)) + 
 labs(title = 'Comparison of Top and Bottom 5 Countries',
     subtitle = paste('Based on Life Ladder,', params$Year),
     x= 'Life Ladder Score',
     y = 'Life Ladder Score')+theme_stata()
 ```
+
+```{r}
+plist <- list()
+plist[[1]] <- list(p1, "Happiest")
+plist[[2]] <- list(p2, "Unhappiest")
+plist[[3]] <- list(p3, "Comparison")
+```
+
+### {.tabset}
+```{r, results='asis'}
+
+for (i in seq_along(plist))
+{
+  temp <- plist[[i]]
+  cat('####', temp[[2]], ' \n')
+  print(temp[[1]])
+  cat(' \n\n')
+}
+
+```
+
 
 
 ### Top & Bottom five for Happiness index of regions in `r params$Year`
@@ -285,14 +310,18 @@ rr_bottom <- plt_data %>% select(Regional.indicator, year, Life.Ladder) %>% grou
 
 ```{r message=FALSE, warning=FALSE}
 # Top 5 Happiest Countries
-ggplot(rr_top, aes(y = reorder(Regional.indicator, mean_size), x = mean_size)) + 
+p4 <- ggplot(rr_top, aes(y = reorder(Regional.indicator, mean_size), x = mean_size)) +
+  geom_text(aes(label=round(mean_size,2), hjust=0, vjust=0)) + 
+  coord_cartesian(xlim = c(0, 10)) + 
   labs(title=paste("The World's Happiness Region", params$Year, "(Top 5)"), x="Average Score", y = "Region") +
    geom_bar(stat="identity", fill = "blue") + theme_minimal()
 ```
 
 ```{r message=FALSE, warning=FALSE}
 # Top 5 Unhappiest Countries
-ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size)) + 
+p5 <- ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size)) + 
+geom_text(aes(label=round(mean_size,2), hjust=0, vjust=0)) + 
+  coord_cartesian(xlim = c(0, 10)) + 
   labs(title=paste("The World's Unhappiness Region", params$Year, "(Bottom 5)"), x="Average Score", y = "Region") +
    geom_bar(stat="identity", fill = "darkred") + theme_minimal()
 ```
@@ -301,15 +330,36 @@ ggplot(rr_bottom, aes(y = reorder(Regional.indicator, -mean_size), x = mean_size
 
 ```{r}
 # Comparison of Top 5 and Bottom 5
-bind_rows(rr_top,rr_bottom)%>%
+p6 <- bind_rows(rr_top,rr_bottom)%>%
 ggplot()+geom_point(aes(x= mean_size, y = mean_size))+
 geom_text_repel(aes(x= mean_size, y = mean_size, label = Regional.indicator))+
+  coord_cartesian(xlim = c(0, 10)) + 
 labs(title = 'Comparison of Top and Bottom 5 Regions',
     subtitle = paste('Based on Life Ladder,', params$Year),
     x= 'Mean Life Ladder Score',
     y = 'Mean Life Ladder Score')+theme_stata()
 ```
 
+```{r}
+plist <- list()
+plist[[1]] <- list(p4, "Happiest")
+plist[[2]] <- list(p5, "Unhappiest")
+plist[[3]] <- list(p6, "Comparison")
+```
+
+### {.tabset}
+
+```{r, results='asis'}
+
+for (i in seq_along(plist))
+{
+  temp <- plist[[i]]
+  cat('####', temp[[2]], ' \n')
+  print(temp[[1]])
+  cat(' \n\n')
+}
+
+```
 
 
 # Linear Regression Model
@@ -427,17 +477,6 @@ lmModel <- lm(Life.Ladder ~., data = DataForML)
 lmModel %>% summary
 
 ```
-
-Regression summary in a table 
-
-```{r}
-stargazer(lmModel, type = "text", 
-          style = "apsr",
-          title = "Regression results", 
-          header = FALSE,
-          single.row = T)
-```
-
 
 
 ```{r}
